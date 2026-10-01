@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'month' => 'Month',
+    'year' => 'Year',
     'tooltip' => [
         'search' => 'Search in column',
         'date' => 'Filter by date range',

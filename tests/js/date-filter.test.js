@@ -4,6 +4,20 @@ import columnFilters, { jalaliDate, presetRange } from '../../resources/js/index
 
 const iso = (date) => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-')
 
+test('direct month and year navigation accepts Persian digits and rejects invalid years', () => {
+    const filter = columnFilters({ locale: 'fa', weekStartsOn: 6 })
+    filter.calendarMonth = 12
+    assert.equal(filter.setCalendarYear('۱۳۹۹'), 1399)
+    assert.equal(filter.calendarDays.filter((day) => day.day).length, 30)
+    assert.equal(filter.setCalendarYear('١٤٠٠'), 1400)
+    assert.equal(filter.calendarDays.filter((day) => day.day).length, 29)
+    for (const invalid of ['', 'abc', '0', '3178', '1400.5']) assert.equal(filter.setCalendarYear(invalid), 1400)
+    assert.equal(filter.calendarMonths.length, 12)
+    assert.equal(filter.calendarMonths[0].label, 'فروردین')
+    filter.calendarMonth = 1
+    assert.equal(filter.calendarDays.filter((day) => day.day).length, 31)
+})
+
 test('Nowruz conversion and leap Esfand', () => {
     assert.equal(iso(jalaliDate(1403, 1, 1)), '2024-03-20')
     assert.equal(iso(jalaliDate(1399, 12, 30)), '2021-03-20')

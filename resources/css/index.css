@@ -413,3 +413,6 @@ th.fcf-th .fcf {
 .fcf-calendar-nav { display: flex; align-items: center; justify-content: space-between; margin-block-end: 8px; }
 .fcf-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; text-align: center; }
 .fcf-calendar-grid .fcf-chip { padding: 5px 0; }
+.fcf-calendar-nav { gap: 6px; }
+.fcf-calendar-nav .fcf-calendar-month { flex: 1; min-width: 0; width: auto; }
+.fcf-calendar-nav .fcf-calendar-year { width: 64px; flex: 0 0 64px; text-align: center; }

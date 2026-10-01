@@ -132,11 +132,14 @@
                         @if ($config['jalali'] ?? false)
                             <div class="fcf-calendar" x-cloak x-show="calendarField">
                                 <div class="fcf-calendar-nav">
-                                    <button type="button" class="fcf-btn" x-on:click="moveMonth(-12)" aria-label="{{ __('filament-column-filters::filters.previous_year') }}">−۱۲</button>
                                     <button type="button" class="fcf-btn" x-on:click="moveMonth(-1)" aria-label="{{ __('filament-column-filters::filters.previous_month') }}">−</button>
-                                    <span aria-live="polite" x-text="calendarTitle"></span>
+                                    <select class="fcf-input fcf-calendar-month" x-model.number="calendarMonth" aria-label="{{ __('filament-column-filters::filters.month') }}">
+                                        <template x-for="month in calendarMonths" :key="month.value">
+                                            <option x-bind:value="month.value" x-text="month.label"></option>
+                                        </template>
+                                    </select>
+                                    <input type="text" inputmode="numeric" class="fcf-input fcf-calendar-year" dir="ltr" x-bind:value="calendarYear" x-on:change="$el.value = setCalendarYear($el.value)" x-on:keydown.enter.stop.prevent="$el.value = setCalendarYear($el.value)" aria-label="{{ __('filament-column-filters::filters.year') }}" />
                                     <button type="button" class="fcf-btn" x-on:click="moveMonth(1)" aria-label="{{ __('filament-column-filters::filters.next_month') }}">+</button>
-                                    <button type="button" class="fcf-btn" x-on:click="moveMonth(12)" aria-label="{{ __('filament-column-filters::filters.next_year') }}">+۱۲</button>
                                 </div>
                                 <div class="fcf-calendar-grid">
                                     <template x-for="weekday in weekdays" :key="weekday"><span class="fcf-field-label" x-text="weekday"></span></template>

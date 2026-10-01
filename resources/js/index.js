@@ -128,8 +128,23 @@ export default function filamentColumnFilters(config) {
 
         moveMonth(offset) {
             const month = this.calendarMonth - 1 + offset
-            this.calendarYear += Math.floor(month / 12)
+            const year = this.calendarYear + Math.floor(month / 12)
+            if (year < 1 || year > 3177) return
+            this.calendarYear = year
             this.calendarMonth = ((month % 12) + 12) % 12 + 1
+        },
+
+        setCalendarYear(input) {
+            const normalized = String(input).replace(/[۰-۹]/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(digit))
+                .replace(/[٠-٩]/g, (digit) => '٠١٢٣٤٥٦٧٨٩'.indexOf(digit))
+            const year = Number(normalized)
+            if (Number.isInteger(year) && year >= 1 && year <= 3177) this.calendarYear = year
+            return this.calendarYear
+        },
+
+        get calendarMonths() {
+            const formatter = new Intl.DateTimeFormat(config.locale?.replace('_', '-') || 'en', { calendar: 'persian', month: 'long' })
+            return Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: formatter.format(jalaliDate(1400, i + 1, 1)) }))
         },
 
         get calendarTitle() {

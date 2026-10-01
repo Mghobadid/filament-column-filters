@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'month' => 'חודש',
+    'year' => 'שנה',
     'previous_month' => 'החודש הקודם',
     'next_month' => 'החודש הבא',
     'previous_year' => 'השנה הקודמת',
