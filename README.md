@@ -104,7 +104,7 @@ ColumnFilter::date()
     ->weekStartsOn(6) // Saturday
 ```
 
-The popup displays a Jalali calendar. Month and year presets follow Jalali boundaries, including leap years. Values sent to Livewire and database queries remain Gregorian `Y-m-d`, so `syncWith()` continues to work with existing Gregorian filter state. Generated filter indicators and hidden Filament form fields retain Gregorian dates. `jalali(false)` restores the default picker.
+The popup displays a Jalali calendar. Month and year presets follow Jalali boundaries, including leap years. Values sent to Livewire and database queries remain Gregorian `Y-m-d`, so `syncWith()` continues to work with existing Gregorian filter state. Generated filter indicators display Jalali dates; hidden Filament form fields retain Gregorian dates. PHP's Intl extension is required. `jalali(false)` restores the default picker.
 
 The API is inspired by [ariaieboy/filament-jalali](https://github.com/ariaieboy/filament-jalali); calendar conversion uses the MIT-licensed [jalaali-js](https://github.com/jalaali/jalaali-js).
 
