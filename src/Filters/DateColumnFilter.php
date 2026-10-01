@@ -9,6 +9,9 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\Indicator;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use DateTimeImmutable;
+use DateTimeZone;
+use IntlDateFormatter;
 
 class DateColumnFilter extends ColumnFilter
 {
@@ -115,14 +118,14 @@ class DateColumnFilter extends ColumnFilter
                 if (filled($data['from'] ?? null)) {
                     $indicators[] = Indicator::make(__('filament-column-filters::filters.indicator_from', [
                         'label' => $label,
-                        'date' => $data['from'],
+                        'date' => $this->formatIndicatorDate($data['from']),
                     ]))->removeField('from');
                 }
 
                 if (filled($data['until'] ?? null)) {
                     $indicators[] = Indicator::make(__('filament-column-filters::filters.indicator_until', [
                         'label' => $label,
-                        'date' => $data['until'],
+                        'date' => $this->formatIndicatorDate($data['until']),
                     ]))->removeField('until');
                 }
 
@@ -133,6 +136,24 @@ class DateColumnFilter extends ColumnFilter
     public function getDefaultState(): array
     {
         return ['from' => null, 'until' => null];
+    }
+
+    public function formatIndicatorDate(string $date): string
+    {
+        if (! $this->isJalali) {
+            return $date;
+        }
+
+        $formatter = new IntlDateFormatter(
+            'en_US@calendar=persian;numbers=latn',
+            IntlDateFormatter::NONE,
+            IntlDateFormatter::NONE,
+            'UTC',
+            IntlDateFormatter::TRADITIONAL,
+            'yyyy/MM/dd',
+        );
+
+        return $formatter->format(new DateTimeImmutable($date, new DateTimeZone('UTC'))) ?: $date;
     }
 
     public function getPopupConfig(Column $column, Table $table, ?BaseFilter $targetFilter): array
