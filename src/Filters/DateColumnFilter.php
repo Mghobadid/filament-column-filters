@@ -32,6 +32,15 @@ class DateColumnFilter extends ColumnFilter
 
     protected int $weekStartsOn = 0;
 
+    protected bool $isJalali = false;
+
+    public function jalali(bool $condition = true): static
+    {
+        $this->isJalali = $condition;
+
+        return $this;
+    }
+
     public function getType(): string
     {
         return 'date';
@@ -137,6 +146,8 @@ class DateColumnFilter extends ColumnFilter
             ],
             'presets' => $this->presets,
             'weekStartsOn' => $this->weekStartsOn,
+            'jalali' => $this->isJalali,
+            'locale' => app()->getLocale(),
         ];
     }
 }

@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'previous_month' => 'החודש הקודם',
+    'next_month' => 'החודש הבא',
+    'previous_year' => 'השנה הקודמת',
+    'next_year' => 'השנה הבאה',
     'tooltip' => [
         'search' => 'חיפוש בעמודה',
         'date' => 'סינון לפי טווח תאריכים',

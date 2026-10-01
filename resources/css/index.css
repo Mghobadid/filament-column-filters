@@ -408,3 +408,8 @@ th.fcf-th .fcf {
 .fcf-link:hover {
     text-decoration: underline;
 }
+/* Jalali calendar shares the popup's theme and follows its text direction. */
+.fcf-calendar { margin-block-start: 12px; }
+.fcf-calendar-nav { display: flex; align-items: center; justify-content: space-between; margin-block-end: 8px; }
+.fcf-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; text-align: center; }
+.fcf-calendar-grid .fcf-chip { padding: 5px 0; }

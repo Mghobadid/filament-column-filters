@@ -97,6 +97,17 @@
                         <p class="fcf-section-title">{{ __('filament-column-filters::filters.custom_range') }}</p>
 
                         <div class="fcf-date-range">
+                            @if ($config['jalali'] ?? false)
+                                @foreach (['from' => 'from_date', 'until' => 'until_date'] as $field => $translation)
+                                    <div class="fcf-field">
+                                        <span class="fcf-field-label">{{ __('filament-column-filters::filters.' . $translation) }}</span>
+                                        <button type="button" class="fcf-input" x-on:click="showCalendar('{{ $field }}')" x-bind:aria-expanded="calendarField === '{{ $field }}'" aria-label="{{ __('filament-column-filters::filters.' . $translation) }}">
+                                            <span dir="ltr" x-text="displayDate(state.{{ $field }}) || @js(__('filament-column-filters::filters.' . $translation))"></span>
+                                        </button>
+                                        <button type="button" class="fcf-link" x-show="state.{{ $field }}" x-on:click="state.{{ $field }} = null">{{ __('filament-column-filters::filters.clear') }}</button>
+                                    </div>
+                                @endforeach
+                            @else
                             <label class="fcf-field">
                                 <span class="fcf-field-label">{{ __('filament-column-filters::filters.from_date') }}</span>
                                 <input
@@ -116,7 +127,25 @@
                                     placeholder="{{ __('filament-column-filters::filters.end_date') }}"
                                 />
                             </label>
+                            @endif
                         </div>
+                        @if ($config['jalali'] ?? false)
+                            <div class="fcf-calendar" x-cloak x-show="calendarField">
+                                <div class="fcf-calendar-nav">
+                                    <button type="button" class="fcf-btn" x-on:click="moveMonth(-12)" aria-label="{{ __('filament-column-filters::filters.previous_year') }}">−۱۲</button>
+                                    <button type="button" class="fcf-btn" x-on:click="moveMonth(-1)" aria-label="{{ __('filament-column-filters::filters.previous_month') }}">−</button>
+                                    <span aria-live="polite" x-text="calendarTitle"></span>
+                                    <button type="button" class="fcf-btn" x-on:click="moveMonth(1)" aria-label="{{ __('filament-column-filters::filters.next_month') }}">+</button>
+                                    <button type="button" class="fcf-btn" x-on:click="moveMonth(12)" aria-label="{{ __('filament-column-filters::filters.next_year') }}">+۱۲</button>
+                                </div>
+                                <div class="fcf-calendar-grid">
+                                    <template x-for="weekday in weekdays" :key="weekday"><span class="fcf-field-label" x-text="weekday"></span></template>
+                                    <template x-for="(day, index) in calendarDays" :key="index">
+                                        <button type="button" class="fcf-chip" x-bind:disabled="!day.day" x-bind:style="!day.day && 'visibility: hidden'" x-bind:class="{ 'fcf-chip--active': calendarField && state[calendarField] === day.value }" x-bind:aria-label="day.value ? displayDate(day.value) : ''" x-bind:aria-pressed="calendarField && state[calendarField] === day.value" x-on:click="selectDay(day.value)" x-text="day.day"></button>
+                                    </template>
+                                </div>
+                            </div>
+                        @endif
                     </div>
 
                     <div class="fcf-footer">

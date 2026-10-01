@@ -23,6 +23,10 @@ return [
     'until_date' => 'Until date',
     'start_date' => 'Start date',
     'end_date' => 'End date',
+    'previous_month' => 'Previous month',
+    'next_month' => 'Next month',
+    'previous_year' => 'Previous year',
+    'next_year' => 'Next year',
 
     'presets' => [
         'today' => 'Today',

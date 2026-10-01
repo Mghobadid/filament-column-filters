@@ -18,7 +18,7 @@ Adds a small filter icon to the header of any table column. Clicking it opens a 
 
 The header filters are backed by *real* Filament table filters, so they apply to the table query like any other filter and show the standard filter indicators (with working remove buttons) — but they do not clutter the standard filters dropdown. When you **sync with an existing filter** you already have on the table (via `syncWith()`), the popup reads and writes that filter's state, so choosing a value in the header popup updates the regular filter — dropdown included — and vice versa.
 
-RTL is fully supported and Hebrew translations are included.
+RTL is fully supported and Persian and Hebrew translations are included.
 
 ## Installation
 
@@ -93,6 +93,20 @@ ColumnFilter::date()
 ```
 
 Filters records between the chosen `from` / `until` dates (each side optional). The quick-select presets fill the custom range for you.
+
+##### Persian and Jalali dates
+
+Set your application's locale to `fa` for Persian translations. Enable the Jalali calendar per date filter:
+
+```php
+ColumnFilter::date()
+    ->jalali()
+    ->weekStartsOn(6) // Saturday
+```
+
+The popup displays a Jalali calendar. Month and year presets follow Jalali boundaries, including leap years. Values sent to Livewire and database queries remain Gregorian `Y-m-d`, so `syncWith()` continues to work with existing Gregorian filter state. Generated filter indicators and hidden Filament form fields retain Gregorian dates. `jalali(false)` restores the default picker.
+
+The API is inspired by [ariaieboy/filament-jalali](https://github.com/ariaieboy/filament-jalali); calendar conversion uses the MIT-licensed [jalaali-js](https://github.com/jalaali/jalaali-js).
 
 #### Select
 
@@ -261,7 +275,7 @@ Most variables derive from `--fcf-accent`, so overriding that alone recolours th
 
 ## Translations
 
-English and Hebrew translations are included. Publish them to customize:
+English, Persian and Hebrew translations are included. Publish them to customize:
 
 ```bash
 php artisan vendor:publish --tag=filament-column-filters-translations
@@ -272,6 +286,7 @@ php artisan vendor:publish --tag=filament-column-filters-translations
 ```bash
 npm install
 npm run build   # build resources/dist assets
+npm test        # date conversion and popup state tests (Node 20+)
 composer test   # run the test suite
 ```
 

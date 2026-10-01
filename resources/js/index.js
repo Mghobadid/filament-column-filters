@@ -1,3 +1,12 @@
+import jalaali from 'jalaali-js'
+
+const { toJalaali, toGregorian, jalaaliMonthLength } = jalaali
+
+export function jalaliDate(year, month, day) {
+    const { gy, gm, gd } = toGregorian(year, month, day)
+    return new Date(gy, gm - 1, gd)
+}
+
 function pad(number) {
     return String(number).padStart(2, '0')
 }
@@ -21,9 +30,19 @@ function addDays(date, days) {
     return result
 }
 
-export function presetRange(preset, weekStartsOn = 0) {
+export function presetRange(preset, weekStartsOn = 0, jalali = false) {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
+
+    if (jalali && ['this_month', 'last_month', 'this_year', 'last_year'].includes(preset)) {
+        let { jy, jm } = toJalaali(today)
+        if (preset === 'last_month' && --jm === 0) { jm = 12; jy-- }
+        if (preset === 'last_year') jy--
+        if (preset.endsWith('year')) {
+            return [jalaliDate(jy, 1, 1), jalaliDate(jy, 12, jalaaliMonthLength(jy, 12))]
+        }
+        return [jalaliDate(jy, jm, 1), jalaliDate(jy, jm, jalaaliMonthLength(jy, jm))]
+    }
 
     switch (preset) {
         case 'today':
@@ -85,6 +104,59 @@ export default function filamentColumnFilters(config) {
         optionSearch: '',
 
         panelStyle: {},
+
+        calendarField: null,
+        calendarYear: 1400,
+        calendarMonth: 1,
+
+        displayDate(value) {
+            if (!value) return ''
+            const [year, month, day] = value.slice(0, 10).split('-').map(Number)
+            const { jy, jm, jd } = toJalaali(year, month, day)
+            return `${jy}/${pad(jm)}/${pad(jd)}`
+        },
+
+        showCalendar(field) {
+            const value = this.state[field]
+            const date = value ? new Date(...value.slice(0, 10).split('-').map((v, i) => Number(v) - (i === 1 ? 1 : 0))) : new Date()
+            const { jy, jm } = toJalaali(date)
+            this.calendarYear = jy
+            this.calendarMonth = jm
+            this.calendarField = field
+            this.$nextTick(() => this.position())
+        },
+
+        moveMonth(offset) {
+            const month = this.calendarMonth - 1 + offset
+            this.calendarYear += Math.floor(month / 12)
+            this.calendarMonth = ((month % 12) + 12) % 12 + 1
+        },
+
+        get calendarTitle() {
+            return new Intl.DateTimeFormat(config.locale?.replace('_', '-') || 'en', {
+                calendar: 'persian', month: 'long', year: 'numeric',
+            }).format(jalaliDate(this.calendarYear, this.calendarMonth, 1))
+        },
+
+        get weekdays() {
+            return Array.from({ length: 7 }, (_, i) => new Intl.DateTimeFormat(config.locale?.replace('_', '-') || 'en', { weekday: 'short' })
+                .format(new Date(2024, 0, 7 + ((config.weekStartsOn ?? 0) + i) % 7)))
+        },
+
+        get calendarDays() {
+            const start = jalaliDate(this.calendarYear, this.calendarMonth, 1)
+            const offset = (start.getDay() - (config.weekStartsOn ?? 0) + 7) % 7
+            return Array.from({ length: offset + jalaaliMonthLength(this.calendarYear, this.calendarMonth) }, (_, i) => {
+                const day = i - offset + 1
+                return { day: day > 0 ? day : null, value: day > 0 ? formatDate(jalaliDate(this.calendarYear, this.calendarMonth, day)) : null }
+            })
+        },
+
+        selectDay(value) {
+            this.state[this.calendarField] = value
+            this.calendarField = null
+            this.$nextTick(() => this.position())
+        },
 
         init() {
             this.resetLocalState()
@@ -169,6 +241,7 @@ export default function filamentColumnFilters(config) {
         },
 
         close() {
+            this.calendarField = null
             if (openInstance === this) {
                 openInstance = null
             }
@@ -274,14 +347,14 @@ export default function filamentColumnFilters(config) {
         },
 
         applyPreset(preset) {
-            const [from, until] = presetRange(preset, config.weekStartsOn ?? 0)
+            const [from, until] = presetRange(preset, config.weekStartsOn ?? 0, config.jalali)
 
             this.state.from = from ? formatDate(from) : null
             this.state.until = until ? formatDate(until) : null
         },
 
         isPresetActive(preset) {
-            const [from, until] = presetRange(preset, config.weekStartsOn ?? 0)
+            const [from, until] = presetRange(preset, config.weekStartsOn ?? 0, config.jalali)
 
             return Boolean(
                 from

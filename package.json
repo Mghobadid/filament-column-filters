@@ -2,11 +2,13 @@
     "private": true,
     "type": "module",
     "scripts": {
+        "test": "node --test tests/js/*.test.js",
         "dev": "node bin/build.js --dev",
         "build": "node bin/build.js"
     },
     "devDependencies": {
         "esbuild": "^0.28.0",
+        "jalaali-js": "^1.2.8",
         "prettier": "^3.5.3"
     }
 }
