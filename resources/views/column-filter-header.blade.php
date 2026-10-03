@@ -214,14 +214,15 @@
                                 class="fcf-input"
                                 x-ref="optionSearchInput"
                                 x-model="optionSearch"
+                                x-on:input="searchOptions()"
                                 placeholder="{{ __('filament-column-filters::filters.search_options') }}"
                             />
                         </div>
                     @endif
 
                     <div class="fcf-section">
-                        @if (($config['multiple'] ?? true) && count($config['options'] ?? []) > 1)
-                            <div class="fcf-bulk-actions">
+                        @if ($config['multiple'] ?? true)
+                            <div class="fcf-bulk-actions" x-show="displayedOptions.length > 1">
                                 <button type="button" class="fcf-link" x-on:click="selectAll">
                                     {{ __('filament-column-filters::filters.select_all') }}
                                 </button>
@@ -232,13 +233,13 @@
                         @endif
 
                         <div class="fcf-options" x-ref="optionsList">
-                            @forelse ($config['options'] ?? [] as $option)
-                                <label class="fcf-option" x-show="optionMatches(@js($option['label']))">
+                            <template x-for="option in displayedOptions" :key="option.value">
+                                <label class="fcf-option">
                                     @if ($config['multiple'] ?? true)
                                         <input
                                             type="checkbox"
                                             class="fcf-checkbox"
-                                            value="{{ $option['value'] }}"
+                                            x-bind:value="option.value"
                                             x-model="state.values"
                                         />
                                     @else
@@ -246,21 +247,18 @@
                                             type="radio"
                                             class="fcf-radio"
                                             name="fcf-{{ $config['filterName'] }}"
-                                            value="{{ $option['value'] }}"
+                                            x-bind:value="option.value"
                                             x-model="state.value"
                                         />
                                     @endif
-                                    <span>{{ $option['label'] }}</span>
+                                    <span x-text="option.label"></span>
                                 </label>
-                            @empty
-                                <p class="fcf-empty">{{ __('filament-column-filters::filters.no_options') }}</p>
-                            @endforelse
-
-                            @if (($config['searchable'] ?? false) && ($config['options'] ?? []) !== [])
-                                <p class="fcf-empty" x-cloak x-show="! hasVisibleOptions">
+                            </template>
+                                <p class="fcf-empty" role="status" x-cloak x-show="isSearching">{{ __('filament-column-filters::filters.searching') }}</p>
+                                <p class="fcf-empty" role="alert" x-cloak x-show="searchError">{{ __('filament-column-filters::filters.search_error') }}</p>
+                                <p class="fcf-empty" x-cloak x-show="! hasVisibleOptions && ! isSearching && ! searchError">
                                     {{ __('filament-column-filters::filters.no_options') }}
                                 </p>
-                            @endif
                         </div>
                     </div>
 

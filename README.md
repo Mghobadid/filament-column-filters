@@ -120,6 +120,43 @@ ColumnFilter::select()
 
 When there are many options, a search field appears at the top of the popup to filter the option list (client-side).
 
+##### Server-side search
+
+For large datasets, add `HasColumnFilters` to your table's Livewire component or ListRecords page. It provides the remote search methods:
+
+```php
+use Zvizvi\FilamentColumnFilters\Concerns\HasColumnFilters;
+
+class ListOrders extends ListRecords
+{
+    use HasColumnFilters;
+}
+```
+
+Configure a limited preload, search callback, and selected-label callback:
+
+```php
+ColumnFilter::select()
+    ->multiple()
+    ->preload() // use preload(false) to start empty
+    ->preloadLimit(20)
+    ->optionsLimit(50)
+    ->searchDebounce(500)
+    ->options(fn (int $limit): array => User::query()
+        ->orderBy('name')->limit($limit)->pluck('name', 'id')->all())
+    ->getSearchResultsUsing(fn (string $search): array => User::query()
+        ->where('name', 'like', "%{$search}%")
+        ->orderBy('name')->limit(50)->pluck('name', 'id')->all())
+    ->getOptionLabelsUsing(fn (array $values): array => User::query()
+        ->whereIn('id', $values)->pluck('name', 'id')->all());
+```
+
+For single select, use `multiple(false)` and `getOptionLabelUsing(fn ($value) => User::find($value)?->name)` instead. Use the same authorization and tenant scope in preload, search, and label queries. Always limit database queries; the plugin's result cap does not prevent a callback from fetching too many rows.
+
+Preloaded items are filtered immediately in the browser, followed by a debounced server search even when local matches exist. Server results determine matching and ordering. Selected items remain available across searches, and “Select all” applies only to displayed options. Existing static lists retain client-side search.
+
+When syncing with a searchable Filament `SelectFilter`, the popup reuses its remote search and selected-label callbacks, including relationship searches. Add `HasColumnFilters` to the owning component in this case too. Preload and result limits default to 50; debounce defaults to 500 ms.
+
 #### Range
 
 ```php

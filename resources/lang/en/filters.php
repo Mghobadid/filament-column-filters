@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'searching' => 'Searching...',
+    'search_error' => 'Unable to load options. Please try again.',
     'month' => 'Month',
     'year' => 'Year',
     'tooltip' => [

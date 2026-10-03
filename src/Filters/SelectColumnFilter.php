@@ -29,6 +29,85 @@ class SelectColumnFilter extends ColumnFilter
 
     protected int $searchThreshold = 8;
 
+    protected ?Closure $searchResultsUsing = null;
+    protected ?Closure $optionLabelUsing = null;
+    protected ?Closure $optionLabelsUsing = null;
+    protected bool $isPreloaded = true;
+    protected int $preloadLimit = 50;
+    protected int $optionsLimit = 50;
+    protected int $searchDebounce = 500;
+
+    public function getSearchResultsUsing(Closure $callback): static
+    {
+        $this->searchResultsUsing = $callback;
+        return $this;
+    }
+
+    public function getOptionLabelUsing(Closure $callback): static
+    {
+        $this->optionLabelUsing = $callback;
+        return $this;
+    }
+
+    public function getOptionLabelsUsing(Closure $callback): static
+    {
+        $this->optionLabelsUsing = $callback;
+        return $this;
+    }
+
+    public function preload(bool $condition = true): static
+    {
+        $this->isPreloaded = $condition;
+        return $this;
+    }
+
+    public function preloadLimit(int $limit): static
+    {
+        $this->preloadLimit = max(1, $limit);
+        return $this;
+    }
+
+    public function optionsLimit(int $limit): static
+    {
+        $this->optionsLimit = max(1, $limit);
+        return $this;
+    }
+
+    public function searchDebounce(int $milliseconds): static
+    {
+        $this->searchDebounce = max(0, $milliseconds);
+        return $this;
+    }
+
+    public static function flattenOptions(array $options): array
+    {
+        $result = [];
+        foreach ($options as $value => $label) {
+            if (is_array($label)) {
+                $result = array_merge($result, static::flattenOptions($label));
+            } else {
+                $result[] = ['value' => (string) $value, 'label' => (string) $label];
+            }
+        }
+        return $result;
+    }
+
+    public function hasRemoteSearch(?BaseFilter $target): bool
+    {
+        return $this->searchResultsUsing !== null
+            || ($target instanceof SelectFilter && $target->getFormField()->hasDynamicSearchResults());
+    }
+
+    public function remoteResults(string $search, SelectFilter $target, ?\Filament\Forms\Components\Select $field = null): array
+    {
+        $field ??= $target->getFormField();
+        $field->optionsLimit(min($this->optionsLimit, $field->getOptionsLimit()));
+        $results = $this->searchResultsUsing !== null
+            ? $field->evaluate($this->searchResultsUsing, ['search' => $search, 'limit' => $this->optionsLimit])
+            : $field->getSearchResults($search);
+        return array_slice(static::flattenOptions((array) $results), 0, $this->optionsLimit);
+    }
+
     public function getType(): string
     {
         return 'select';
@@ -84,7 +163,7 @@ class SelectColumnFilter extends ColumnFilter
     public function getOptions(?BaseFilter $targetFilter = null): array
     {
         if ($this->options !== null) {
-            $options = $this->options instanceof Closure ? ($this->options)() : $this->options;
+            $options = $this->options instanceof Closure ? ($this->options)($this->preloadLimit) : $this->options;
 
             return (array) $options;
         }
@@ -138,6 +217,16 @@ class SelectColumnFilter extends ColumnFilter
             $filter->multiple();
         }
 
+        if ($this->searchResultsUsing !== null) {
+            $filter->searchable()->getSearchResultsUsing($this->searchResultsUsing)->optionsLimit($this->optionsLimit);
+        }
+        if ($this->optionLabelUsing !== null) {
+            $filter->getOptionLabelUsing($this->optionLabelUsing);
+        }
+        if ($this->optionLabelsUsing !== null) {
+            $filter->getOptionLabelsUsing($this->optionLabelsUsing);
+        }
+
         $applyUsing = $this->getApplyCallback();
 
         if ($applyUsing !== null) {
@@ -180,7 +269,20 @@ class SelectColumnFilter extends ColumnFilter
 
         $options = [];
 
-        foreach ($this->getOptions($targetFilter) as $value => $label) {
+        $remote = $this->hasRemoteSearch($targetFilter);
+        if ($remote && ! method_exists($table->getLivewire(), 'searchColumnFilterOptions')) {
+            throw new \LogicException('Remote column select filters require the HasColumnFilters trait on the table component.');
+        }
+        $initialOptions = [];
+        if ($remote && $this->options === null && $targetFilter instanceof SelectFilter && $this->isPreloaded) {
+            $field = $targetFilter->getFormField()->preload()->optionsLimit($this->preloadLimit);
+            $schema = \Filament\Schemas\Schema::make($table->getLivewire())->model($table->getModel())->components([$field]);
+            $schema->getComponents();
+            $initialOptions = $field->getOptions();
+        } elseif (! $remote || $this->isPreloaded) {
+            $initialOptions = $this->getOptions($targetFilter);
+        }
+        foreach ($initialOptions as $value => $label) {
             if (is_array($label)) {
                 // Flatten grouped options for the popup list.
                 foreach ($label as $groupedValue => $groupedLabel) {
@@ -200,8 +302,11 @@ class SelectColumnFilter extends ColumnFilter
                 'value' => $this->getStateKey($isMultiple ? 'values' : 'value'),
             ],
             'multiple' => $isMultiple,
-            'options' => $options,
-            'searchable' => $this->isSearchable ?? (count($options) > $this->searchThreshold),
+            'options' => $remote ? array_slice($options, 0, $this->preloadLimit) : $options,
+            'searchable' => $remote || ($this->isSearchable ?? (count($options) > $this->searchThreshold)),
+            'remoteSearch' => $remote,
+            'columnName' => $column->getName(),
+            'searchDebounce' => $this->searchDebounce,
         ];
     }
 }

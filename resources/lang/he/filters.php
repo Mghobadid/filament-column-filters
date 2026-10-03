@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'searching' => 'מחפש...',
+    'search_error' => 'לא ניתן לטעון אפשרויות. נסו שוב.',
     'month' => 'חודש',
     'year' => 'שנה',
     'previous_month' => 'החודש הקודם',

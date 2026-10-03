@@ -102,6 +102,77 @@ export default function filamentColumnFilters(config) {
         state: {},
 
         optionSearch: '',
+        remoteOptions: null,
+        knownOptions: [],
+        isSearching: false,
+        searchError: false,
+        searchTimer: null,
+        searchVersion: 0,
+        popupVersion: 0,
+
+        rememberOptions(options) {
+            const selected = new Set(config.multiple ? this.state.values ?? [] : [this.state.value])
+            const merged = new Map([...(config.options ?? []), ...this.knownOptions.filter((option) => selected.has(String(option.value)))]
+                .map((option) => [String(option.value), option]))
+            options.forEach((option) => merged.set(String(option.value), option))
+            this.knownOptions = [...merged.values()]
+        },
+
+        get displayedOptions() {
+            const options = this.remoteOptions ?? (config.options ?? []).filter((option) => this.optionMatches(option.label))
+            if (!config.remoteSearch) return options
+            const selected = new Set(config.multiple ? this.state.values ?? [] : [this.state.value])
+            const merged = new Map(options.map((option) => [String(option.value), option]))
+            this.knownOptions.filter((option) => selected.has(String(option.value)))
+                .forEach((option) => merged.set(String(option.value), option))
+            return [...merged.values()]
+        },
+
+        searchOptions() {
+            clearTimeout(this.searchTimer)
+            const version = ++this.searchVersion
+            this.rememberOptions(this.remoteOptions ?? [])
+            this.remoteOptions = null
+            this.searchError = false
+            const search = this.optionSearch.trim()
+            this.isSearching = Boolean(config.remoteSearch && search)
+            if (!this.isSearching) return
+            this.searchTimer = setTimeout(() => this.fetchOptions(search, version), config.searchDebounce ?? 500)
+        },
+
+        async fetchOptions(search, version) {
+            try {
+                const options = await this.$wire.searchColumnFilterOptions(config.columnName, search)
+                if (version !== this.searchVersion) return
+                this.remoteOptions = options
+                this.rememberOptions(options)
+            } catch (error) {
+                if (version !== this.searchVersion) return
+                this.searchError = true
+            } finally {
+                if (version === this.searchVersion) {
+                    this.isSearching = false
+                    this.$nextTick(() => this.position())
+                }
+            }
+        },
+
+        async loadSelectedOptions() {
+            const version = this.popupVersion
+            try {
+                const options = await this.$wire.getColumnFilterSelectedOptions(config.columnName)
+                if (version === this.popupVersion) this.rememberOptions(options)
+            } catch (error) {
+                if (version === this.popupVersion) this.searchError = true
+            }
+        },
+
+        destroy() {
+            this.popupVersion++
+            clearTimeout(this.searchTimer)
+            this.searchVersion++
+            if (openInstance === this) openInstance = null
+        },
 
         panelStyle: {},
 
@@ -174,6 +245,7 @@ export default function filamentColumnFilters(config) {
         },
 
         init() {
+            this.rememberOptions(config.options ?? [])
             this.resetLocalState()
         },
 
@@ -235,7 +307,10 @@ export default function filamentColumnFilters(config) {
 
             this.resetLocalState()
             this.optionSearch = ''
+            this.remoteOptions = null
+            this.searchError = false
             this.open = true
+            if (config.remoteSearch) this.loadSelectedOptions()
 
             this.$nextTick(() => {
                 this.position()
@@ -256,6 +331,10 @@ export default function filamentColumnFilters(config) {
         },
 
         close() {
+            this.popupVersion++
+            clearTimeout(this.searchTimer)
+            this.searchVersion++
+            this.isSearching = false
             this.calendarField = null
             if (openInstance === this) {
                 openInstance = null
@@ -271,12 +350,11 @@ export default function filamentColumnFilters(config) {
         },
 
         get hasVisibleOptions() {
-            return (config.options ?? []).some((option) => this.optionMatches(option.label))
+            return this.displayedOptions.length > 0
         },
 
         visibleOptionValues() {
-            return (config.options ?? [])
-                .filter((option) => this.optionMatches(option.label))
+            return this.displayedOptions
                 .map((option) => String(option.value))
         },
 

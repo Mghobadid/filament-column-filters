@@ -31,6 +31,52 @@ use Zvizvi\FilamentColumnFilters\FilamentColumnFilters;
  */
 trait HasColumnFilters
 {
+    #[\Livewire\Attributes\Renderless]
+    public function searchColumnFilterOptions(string $columnName, string $search): array
+    {
+        [$config, $target] = $this->resolveRemoteColumnFilter($columnName);
+        abort_if(mb_strlen($search) > 200, 422);
+        $field = $target->getFormField();
+        $schema = \Filament\Schemas\Schema::make($this)
+            ->model($this->getTable()->getModel())
+            ->statePath('tableFilters.' . $target->getName())->components([$field]);
+        $schema->getComponents();
+        return $config->remoteResults(trim($search), $target, $field);
+    }
+
+    #[\Livewire\Attributes\Renderless]
+    public function getColumnFilterSelectedOptions(string $columnName): array
+    {
+        [$config, $target] = $this->resolveRemoteColumnFilter($columnName);
+        $field = $target->getFormField();
+        $schema = \Filament\Schemas\Schema::make($this)
+            ->model($this->getTable()->getModel())
+            ->statePath('tableFilters.' . $target->getName())
+            ->components([$field]);
+        // Attach the field to a schema so Filament resolves its state and utility injections.
+        $schema->getComponents();
+        $options = $field->isMultiple()
+            ? $field->getOptionLabels(false)
+            : (filled($field->getState()) ? [$field->getState() => $field->getOptionLabel(false)] : []);
+        return $config::flattenOptions(array_filter($options, fn ($label) => $label !== null));
+    }
+
+    protected function resolveRemoteColumnFilter(string $columnName): array
+    {
+        FilamentColumnFilters::processComponent($this);
+        $table = $this->getTable();
+        $column = $table->getColumns()[$columnName] ?? null;
+        abort_unless($column !== null && ! $column->isHidden(), 404);
+        $config = FilamentColumnFilters::getColumnFilter($column);
+        abort_unless($config instanceof \Zvizvi\FilamentColumnFilters\Filters\SelectColumnFilter, 404);
+        $target = $config->isSyncingWithExisting()
+            ? $table->getFilter($config->getTargetFilterName($column))
+            : ($config->findExistingFilter($table, $column)
+                ?? $table->getFilter($config->getTargetFilterName($column)));
+        abort_unless($target instanceof \Filament\Tables\Filters\SelectFilter && $config->hasRemoteSearch($target), 404);
+        return [$config, $target];
+    }
+
     public function bootedHasColumnFilters(): void
     {
         // decorate: true so the header decoration happens here too. A headless
