@@ -40,10 +40,10 @@ class RangeColumnFilter extends ColumnFilter
             ->schema([
                 TextInput::make('from')
                     ->label(__('filament-column-filters::filters.range_from'))
-                    ->numeric(),
+                    ->numeric()->step($this->step ?? 'any'),
                 TextInput::make('until')
                     ->label(__('filament-column-filters::filters.range_until'))
-                    ->numeric(),
+                    ->numeric()->step($this->step ?? 'any'),
             ])
             ->query(function (Builder $query, array $data) use ($attribute, $applyUsing): Builder {
                 if ($applyUsing !== null) {

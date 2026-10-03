@@ -39,6 +39,27 @@ public function panel(Panel $panel): Panel
 
 ## Usage
 
+### Native Filament composition
+
+Column popups now render actual Filament fields. Attach a Filter or SelectFilter directly:
+
+```php
+TextColumn::make('author.name')->columnFilter(
+    SelectFilter::make('author')
+        ->relationship('author', 'name')
+        ->searchable(['name', 'email'])
+        ->preload()
+        ->optionsLimit(20),
+);
+```
+
+Custom Filter schemas can include DatePicker, TextInput and other Filament components. Configure queries, defaults and indicators on the filter normally. Existing ColumnFilter factories remain available.
+
+On deferred tables, the popup shares tableDeferredFilters with the standard filters panel. Close retains draft edits; Apply validates and applies only the current popup, preserving other drafts. Tables using deferFilters(false) retain native live behavior. Synced filters remain editable in both locations.
+
+The native Select replaces our custom checkbox list, bulk-selection buttons and local-then-remote search. Grouped options, disabled options, HTML labels and relationship search are now handled by Filament. Configure synced filters on the underlying SelectFilter.
+
+
 Attach a filter to any table column with the `columnFilter()` method:
 
 ```php
@@ -104,7 +125,7 @@ ColumnFilter::date()
     ->weekStartsOn(6) // Saturday
 ```
 
-The popup displays a Jalali calendar. Month and year presets follow Jalali boundaries, including leap years. Values sent to Livewire and database queries remain Gregorian `Y-m-d`, so `syncWith()` continues to work with existing Gregorian filter state. Generated filter indicators display Jalali dates; hidden Filament form fields retain Gregorian dates. PHP's Intl extension is required. `jalali(false)` restores the default picker.
+The popup uses the Jalali DatePicker from ariaieboy/filament-jalali, installed as a dependency. Date presets and generated indicators use Jalali dates while query values remain Gregorian. Configure jalali() directly on DatePicker fields when syncing with an existing filter.
 
 The API is inspired by [ariaieboy/filament-jalali](https://github.com/ariaieboy/filament-jalali); calendar conversion uses the MIT-licensed [jalaali-js](https://github.com/jalaali/jalaali-js).
 
@@ -118,7 +139,7 @@ ColumnFilter::select()
     ->searchThreshold(8) // options count above which the search field shows automatically (default: 8)
 ```
 
-When there are many options, a search field appears at the top of the popup to filter the option list (client-side).
+The popup renders the actual Filament Select component. Use searchable() to control its search input; searchThreshold() is retained only for compatibility.
 
 ##### Server-side search
 
@@ -144,7 +165,7 @@ ColumnFilter::select()
 
 For single select, use `multiple(false)` and `getOptionLabelUsing(fn ($value) => User::find($value)?->name)` instead. Use the same authorization and tenant scope in preload, search, and label queries. Always limit database queries; the plugin's result cap does not prevent a callback from fetching too many rows.
 
-Preloaded items are filtered immediately in the browser, followed by a debounced server search even when local matches exist. Server results determine matching and ordering. Selected items remain available across searches, and “Select all” applies only to displayed options. Existing static lists retain client-side search.
+Search and selected labels follow native Filament Select behavior. Always limit custom database queries. preloadLimit() controls the limit passed to the factory options callback; optionsLimit() is forwarded to Filament.
 
 When syncing with a searchable Filament `SelectFilter`, the popup reuses its remote search and selected-label callbacks, including relationship searches. Preload and result limits default to 50; debounce defaults to 500 ms. `HasColumnFilters` remains optional for tables built outside a Livewire request, as described below.
 
@@ -199,7 +220,7 @@ $table
     ]);
 ```
 
-For a `select` sync, the options and single/multiple mode are read automatically from the existing `SelectFilter` (you can still override with `->options()`).
+For a synced select, the complete field configuration comes from the existing SelectFilter. Configure options and search on that filter.
 
 For filters with custom form field names, map the popup's fields to your filter's state keys:
 

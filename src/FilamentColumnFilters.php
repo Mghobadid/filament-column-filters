@@ -26,14 +26,19 @@ class FilamentColumnFilters
      */
     protected static ?WeakMap $decorated = null;
 
+    protected static ?WeakMap $generatedFilters = null;
+
     public static function registerColumnMacro(): void
     {
         if (Column::hasMacro('columnFilter')) {
             return;
         }
 
-        Column::macro('columnFilter', function (ColumnFilter $filter) {
+        Column::macro('columnFilter', function (ColumnFilter | \Filament\Tables\Filters\BaseFilter $filter) {
             /** @var Column $this */
+            if ($filter instanceof \Filament\Tables\Filters\BaseFilter) {
+                $filter = new \Zvizvi\FilamentColumnFilters\Filters\ComposedColumnFilter($filter);
+            }
             FilamentColumnFilters::attach($this, $filter);
 
             return $this;
@@ -68,7 +73,6 @@ class FilamentColumnFilters
 
         on('call', function ($component, $method = null, $params = null) {
             static::processComponent($component);
-            static::handleFilterRemovalCall($component, $method, is_array($params) ? $params : []);
         });
 
         on('render', function ($component) {
@@ -119,6 +123,7 @@ class FilamentColumnFilters
 
             $filterName = $config->getTargetFilterName($column);
             $targetFilter = $table->getFilter($filterName);
+            $initialize = false;
 
             if ($targetFilter === null && ! $config->isSyncingWithExisting()) {
                 // A matching regular filter (same name or, for selects, same
@@ -135,22 +140,41 @@ class FilamentColumnFilters
                     // the filters form schema was built and cached, so it
                     // never renders in the standard filters dropdown.
                     $targetFilter = $config->makeTableFilter($column);
+                    $initialize = ! array_key_exists($filterName, $component->tableFilters ?? []);
                     $table->pushFilters([$targetFilter]);
+                    static::$generatedFilters ??= new WeakMap;
+                    static::$generatedFilters[$targetFilter] = true;
 
                     static::seedFilterState($component, $filterName, $config->getDefaultState());
                 }
             }
 
-            if ($config instanceof \Zvizvi\FilamentColumnFilters\Filters\SelectColumnFilter
-                && $targetFilter instanceof \Filament\Tables\Filters\SelectFilter
-                && ! $column->isHidden() && $config->hasRemoteSearch($targetFilter)) {
+            if ($targetFilter !== null && ! $column->isHidden()) {
                 $schema = $component->getSchema('tableFiltersForm');
                 $key = 'fcf_' . sha1($column->getName());
                 if ($schema !== null && $schema->getComponent('tableFiltersForm.' . $key, isAbsoluteKey: true) === null) {
+                    $popupConfig = static::popupConfig($config, $column, $table, $targetFilter, $filterName);
+                    $group = \Zvizvi\FilamentColumnFilters\Components\ColumnFilterPopup::make()
+                        ->filter($targetFilter, $popupConfig)
+                        ->schema(array_map(fn ($field) => $field instanceof \Filament\Schemas\Components\Component ? $field->getClone() : $field, $targetFilter->getSchemaComponents()))
+                        ->statePath($filterName)->key($key)->columns($targetFilter->getColumns());
+                    $components = $schema->getComponents();
+                    if (static::$generatedFilters?->offsetExists($targetFilter)) {
+                        $components = array_filter($components, fn ($item) => $item->getKey() !== 'tableFiltersForm.' . $filterName);
+                    }
                     $schema->components([
-                        ...$schema->getComponents(),
-                        \Zvizvi\FilamentColumnFilters\Components\RemoteSelectOptions::make($config, $targetFilter)->key($key),
+                        ...$components,
+                        $group,
                     ]);
+                    foreach ($group->getChildSchema()->getFlatFields() as $field) {
+                        $field->id($key . '_' . str_replace('.', '_', $field->getStatePath()));
+                    }
+                    if ($initialize) {
+                        $group->getChildSchema()->fill();
+                        if ($table->hasDeferredFilters()) {
+                            $component->tableFilters[$filterName] = $component->tableDeferredFilters[$filterName] ?? [];
+                        }
+                    }
                 }
             }
 
@@ -273,7 +297,7 @@ class FilamentColumnFilters
 
         // The popup must bind to the resolved filter name, which may be an
         // auto-detected existing filter rather than the generated name.
-        $popupConfig = $config->getPopupConfig($column, $table, $targetFilter);
+        $popupConfig = static::popupConfig($config, $column, $table, $targetFilter, $filterName);
         $popupConfig['filterName'] = $filterName;
 
         $html = view('filament-column-filters::column-filter-header', [
@@ -292,6 +316,21 @@ class FilamentColumnFilters
     /**
      * @return WeakMap<Column, ColumnFilter>
      */
+    protected static function popupConfig(ColumnFilter $config, Column $column, Table $table, mixed $target, string $name): array
+    {
+        $result = $config instanceof \Zvizvi\FilamentColumnFilters\Filters\SelectColumnFilter
+            ? ['type' => 'select', 'filterName' => $name]
+            : $config->getPopupConfig($column, $table, $target);
+        $id = 'fcf_' . sha1($column->getName());
+        return $result + [
+            'composed' => true,
+            'triggerId' => $table->getLivewire()->getId() . '_' . $id,
+            'componentKey' => 'tableFiltersForm.' . $id,
+            'statePath' => ($table->hasDeferredFilters() ? 'tableDeferredFilters.' : 'tableFilters.') . $name,
+            'deferred' => $table->hasDeferredFilters(),
+        ];
+    }
+
     protected static function registry(): WeakMap
     {
         return static::$registry ??= new WeakMap;

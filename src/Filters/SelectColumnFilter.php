@@ -213,6 +213,12 @@ class SelectColumnFilter extends ColumnFilter
             ->options(fn (): array => $this->getOptions())
             ->attribute($attribute);
 
+        $filter->searchable($this->isSearchable ?? true)
+            ->preload($this->isPreloaded)
+            ->optionsLimit($this->optionsLimit);
+        $filter->modifyFormFieldUsing(fn (\Filament\Forms\Components\Select $field) => $field
+            ->native(false)->searchDebounce($this->searchDebounce));
+
         if ($this->isMultiple()) {
             $filter->multiple();
         }

@@ -24,6 +24,7 @@ class TestCase extends Orchestra
     protected function getPackageProviders($app)
     {
         $providers = [
+            \Ariaieboy\FilamentJalali\FilamentJalaliServiceProvider::class,
             ActionsServiceProvider::class,
             BladeCaptureDirectiveServiceProvider::class,
             BladeHeroiconsServiceProvider::class,

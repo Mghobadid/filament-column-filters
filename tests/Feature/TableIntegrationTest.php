@@ -34,7 +34,7 @@ it('auto-syncs with an existing filter on the same attribute without syncWith', 
     // header popup shows its options.
     expect($table->getFilter('cf_status'))->toBeNull();
 
-    $component->assertSeeHtml('value="open"');
+    $component->assertSee('Open');
 });
 
 it('decorates configured column headers with the filter popup', function () {
