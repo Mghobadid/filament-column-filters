@@ -141,6 +141,19 @@ class FilamentColumnFilters
                 }
             }
 
+            if ($config instanceof \Zvizvi\FilamentColumnFilters\Filters\SelectColumnFilter
+                && $targetFilter instanceof \Filament\Tables\Filters\SelectFilter
+                && ! $column->isHidden() && $config->hasRemoteSearch($targetFilter)) {
+                $schema = $component->getSchema('tableFiltersForm');
+                $key = 'fcf_' . sha1($column->getName());
+                if ($schema !== null && $schema->getComponent('tableFiltersForm.' . $key, isAbsoluteKey: true) === null) {
+                    $schema->components([
+                        ...$schema->getComponents(),
+                        \Zvizvi\FilamentColumnFilters\Components\RemoteSelectOptions::make($config, $targetFilter)->key($key),
+                    ]);
+                }
+            }
+
             if ($decorate) {
                 static::decorateColumnHeader($component, $table, $column, $config, $filterName, $targetFilter);
             }

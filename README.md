@@ -122,16 +122,7 @@ When there are many options, a search field appears at the top of the popup to f
 
 ##### Server-side search
 
-For large datasets, add `HasColumnFilters` to your table's Livewire component or ListRecords page. It provides the remote search methods:
-
-```php
-use Zvizvi\FilamentColumnFilters\Concerns\HasColumnFilters;
-
-class ListOrders extends ListRecords
-{
-    use HasColumnFilters;
-}
-```
+For large datasets, configure remote search below. Registering the plugin is sufficient: no additional page trait is needed. The popup uses Filament's existing schema-component Livewire dispatcher for search and selected labels.
 
 Configure a limited preload, search callback, and selected-label callback:
 
@@ -155,7 +146,7 @@ For single select, use `multiple(false)` and `getOptionLabelUsing(fn ($value) =>
 
 Preloaded items are filtered immediately in the browser, followed by a debounced server search even when local matches exist. Server results determine matching and ordering. Selected items remain available across searches, and “Select all” applies only to displayed options. Existing static lists retain client-side search.
 
-When syncing with a searchable Filament `SelectFilter`, the popup reuses its remote search and selected-label callbacks, including relationship searches. Add `HasColumnFilters` to the owning component in this case too. Preload and result limits default to 50; debounce defaults to 500 ms.
+When syncing with a searchable Filament `SelectFilter`, the popup reuses its remote search and selected-label callbacks, including relationship searches. Preload and result limits default to 50; debounce defaults to 500 ms. `HasColumnFilters` remains optional for tables built outside a Livewire request, as described below.
 
 #### Range
 

@@ -270,9 +270,6 @@ class SelectColumnFilter extends ColumnFilter
         $options = [];
 
         $remote = $this->hasRemoteSearch($targetFilter);
-        if ($remote && ! method_exists($table->getLivewire(), 'searchColumnFilterOptions')) {
-            throw new \LogicException('Remote column select filters require the HasColumnFilters trait on the table component.');
-        }
         $initialOptions = [];
         if ($remote && $this->options === null && $targetFilter instanceof SelectFilter && $this->isPreloaded) {
             $field = $targetFilter->getFormField()->preload()->optionsLimit($this->preloadLimit);
@@ -306,6 +303,7 @@ class SelectColumnFilter extends ColumnFilter
             'searchable' => $remote || ($this->isSearchable ?? (count($options) > $this->searchThreshold)),
             'remoteSearch' => $remote,
             'columnName' => $column->getName(),
+            'remoteComponentKey' => 'tableFiltersForm.fcf_' . sha1($column->getName()),
             'searchDebounce' => $this->searchDebounce,
         ];
     }

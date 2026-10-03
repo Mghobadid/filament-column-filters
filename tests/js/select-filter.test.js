@@ -14,7 +14,7 @@ test('local matches never prevent remote search and remote labels need not match
     const filter = makeFilter()
     filter.optionSearch = 'Ali'
     assert.deepEqual(filter.visibleOptionValues(), ['1'])
-    filter.$wire.searchColumnFilterOptions = async () => [{ value: '2', label: 'Bob (matched email)' }]
+    filter.$wire.callSchemaComponentMethod = async () => [{ value: '2', label: 'Bob (matched email)' }]
     await filter.fetchOptions('Ali', filter.searchVersion)
     assert.deepEqual(filter.visibleOptionValues(), ['2'])
     filter.state.values = ['2']
@@ -26,7 +26,7 @@ test('local matches never prevent remote search and remote labels need not match
 test('stale responses and closed popup responses are ignored', async () => {
     const filter = makeFilter()
     let resolve
-    filter.$wire.searchColumnFilterOptions = () => new Promise((done) => { resolve = done })
+    filter.$wire.callSchemaComponentMethod = () => new Promise((done) => { resolve = done })
     const pending = filter.fetchOptions('old', filter.searchVersion)
     filter.close()
     resolve([{ value: '2', label: 'Old' }])
@@ -37,7 +37,7 @@ test('stale responses and closed popup responses are ignored', async () => {
 test('remote failure leaves local matches usable and clears loading state', async () => {
     const filter = makeFilter()
     filter.isSearching = true
-    filter.$wire.searchColumnFilterOptions = async () => { throw new Error('network') }
+    filter.$wire.callSchemaComponentMethod = async () => { throw new Error('network') }
     await filter.fetchOptions('Ali', filter.searchVersion)
     assert.equal(filter.searchError, true)
     assert.equal(filter.isSearching, false)

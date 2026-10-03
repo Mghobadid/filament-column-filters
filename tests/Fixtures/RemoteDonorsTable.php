@@ -4,12 +4,10 @@ namespace Zvizvi\FilamentColumnFilters\Tests\Fixtures;
 
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Zvizvi\FilamentColumnFilters\Concerns\HasColumnFilters;
 use Zvizvi\FilamentColumnFilters\Filters\ColumnFilter;
 
 class RemoteDonorsTable extends DonorsTable
 {
-    use HasColumnFilters;
 
     public function table(Table $table): Table
     {

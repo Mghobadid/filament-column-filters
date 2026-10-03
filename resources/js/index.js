@@ -142,7 +142,8 @@ export default function filamentColumnFilters(config) {
 
         async fetchOptions(search, version) {
             try {
-                const options = await this.$wire.searchColumnFilterOptions(config.columnName, search)
+                const options = await this.$wire.callSchemaComponentMethod(config.remoteComponentKey, 'search', [search])
+                if (!Array.isArray(options)) throw new Error('Remote select component unavailable')
                 if (version !== this.searchVersion) return
                 this.remoteOptions = options
                 this.rememberOptions(options)
@@ -160,7 +161,8 @@ export default function filamentColumnFilters(config) {
         async loadSelectedOptions() {
             const version = this.popupVersion
             try {
-                const options = await this.$wire.getColumnFilterSelectedOptions(config.columnName)
+                const options = await this.$wire.callSchemaComponentMethod(config.remoteComponentKey, 'selectedOptions')
+                if (!Array.isArray(options)) throw new Error('Remote select component unavailable')
                 if (version === this.popupVersion) this.rememberOptions(options)
             } catch (error) {
                 if (version === this.popupVersion) this.searchError = true
