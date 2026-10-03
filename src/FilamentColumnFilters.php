@@ -155,6 +155,7 @@ class FilamentColumnFilters
                 if ($schema !== null && $schema->getComponent('tableFiltersForm.' . $key, isAbsoluteKey: true) === null) {
                     $popupConfig = static::popupConfig($config, $column, $table, $targetFilter, $filterName);
                     $group = \Zvizvi\FilamentColumnFilters\Components\ColumnFilterPopup::make()
+                        ->container($schema)
                         ->filter($targetFilter, $popupConfig)
                         ->schema(array_map(fn ($field) => $field instanceof \Filament\Schemas\Components\Component ? $field->getClone() : $field, $targetFilter->getSchemaComponents()))
                         ->statePath($filterName)->key($key)->columns($targetFilter->getColumns());

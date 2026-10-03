@@ -78,8 +78,10 @@ it('keeps generated filters out of the standard filters form', function () {
 
     $schema = $component->getTableFiltersForm();
 
-    expect($schema->getComponent(fn ($schemaComponent): bool => $schemaComponent->getKey() === 'cf_name' || str_contains((string) ($schemaComponent->getStatePath(false) ?? ''), 'cf_name'), withHidden: true))
-        ->toBeNull();
+    expect($schema->getComponent('tableFiltersForm.cf_name', isAbsoluteKey: true))->toBeNull()
+        ->and($schema->getComponent('tableFiltersForm.status', isAbsoluteKey: true))->not->toBeNull()
+        ->and($schema->getComponent('tableFiltersForm.fcf_' . sha1('name'), isAbsoluteKey: true))
+        ->toBeInstanceOf(\Zvizvi\FilamentColumnFilters\Components\ColumnFilterPopup::class);
 });
 
 it('produces indicators for active generated filters', function () {
