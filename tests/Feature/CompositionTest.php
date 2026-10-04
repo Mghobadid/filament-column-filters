@@ -21,6 +21,20 @@ function composedPopup($component, string $column): ColumnFilterPopup
     return $component->getSchemaComponent('tableFiltersForm.fcf_' . sha1($column));
 }
 
+it('validates and applies grouped range inputs as plain numbers', function () {
+    Donor::create(['name' => 'Below', 'amount' => 999]);
+    Donor::create(['name' => 'Inside', 'amount' => 1500]);
+    Donor::create(['name' => 'Above', 'amount' => 2001]);
+    $component = livewire(ComposedDonorsTable::class)->instance();
+    $component->tableDeferredFilters['cf_amount'] = ['from' => '1,000.125', 'until' => '2,000.50'];
+    composedPopup($component, 'amount')->apply();
+
+    expect($component->tableFilters['cf_amount'])->toBe(['from' => 1000.125, 'until' => 2000.5])
+        ->and($component->getFilteredTableQuery()->pluck('name')->all())->toBe(['Inside']);
+    composedPopup($component, 'amount')->resetFilter();
+    expect($component->getFilteredTableQuery()->count())->toBe(3);
+});
+
 it('renders native fields for each factory and directly attached filters without a trait', function () {
     $component = livewire(ComposedDonorsTable::class)->instance();
     expect(class_uses_recursive($component))->not->toContain(HasColumnFilters::class);
