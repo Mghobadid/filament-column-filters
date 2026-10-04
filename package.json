@@ -9,6 +9,7 @@
     "devDependencies": {
         "esbuild": "^0.28.0",
         "jalaali-js": "^1.2.8",
+        "playwright": "^1.63.0",
         "prettier": "^3.5.3"
     }
 }
