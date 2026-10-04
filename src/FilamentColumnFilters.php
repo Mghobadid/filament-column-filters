@@ -34,10 +34,17 @@ class FilamentColumnFilters
             return;
         }
 
-        Column::macro('columnFilter', function (ColumnFilter | \Filament\Tables\Filters\BaseFilter $filter) {
+        Column::macro('columnFilter', function (ColumnFilter | \Filament\Tables\Filters\BaseFilter $filter, ?string $presentation = null) {
             /** @var Column $this */
             if ($filter instanceof \Filament\Tables\Filters\BaseFilter) {
                 $filter = new \Zvizvi\FilamentColumnFilters\Filters\ComposedColumnFilter($filter);
+            }
+            if ($presentation === 'radio') {
+                $filter->radio();
+            } elseif ($presentation === 'checkbox') {
+                $filter->checkboxList();
+            } elseif ($presentation !== null) {
+                throw new \InvalidArgumentException('Unknown column filter presentation: ' . $presentation);
             }
             FilamentColumnFilters::attach($this, $filter);
 
@@ -167,7 +174,7 @@ class FilamentColumnFilters
                     $group = \Zvizvi\FilamentColumnFilters\Components\ColumnFilterPopup::make()
                         ->container($schema)
                         ->filter($targetFilter, $popupConfig)
-                        ->schema(array_map(fn ($field) => $field instanceof \Filament\Schemas\Components\Component ? $field->getClone() : $field, $targetFilter->getSchemaComponents()))
+                        ->schema($config->getPopupSchemaComponents($targetFilter))
                         ->statePath($filterName)->key($key)->columns($targetFilter->getColumns());
                     $components = $schema->getComponents();
                     if (static::$generatedFilters?->offsetExists($targetFilter)) {

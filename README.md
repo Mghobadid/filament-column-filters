@@ -41,6 +41,32 @@ public function panel(Panel $panel): Panel
 
 ### Native Filament composition
 
+For fixed options, column popups also support native radio and checkbox lists:
+
+```php
+TextColumn::make('status')->columnFilter(
+    SelectFilter::make('status')
+        ->options(OrderStatusEnum::class)
+        ->default(OrderStatusEnum::ACCEPT->value),
+    presentation: 'radio',
+);
+
+TextColumn::make('status')->columnFilter(
+    SelectFilter::make('status')
+        ->options(OrderStatusEnum::class)
+        ->multiple()
+        ->default([OrderStatusEnum::ACCEPT->value]),
+    presentation: 'checkbox',
+);
+```
+
+Radio requires a single SelectFilter; checkbox requires multiple(). The popup
+shares the filter's native state, defaults, queries and indicators. A synced
+standard filter keeps its dropdown. Relationship search uses the dropdown
+presentation. Grouped options are flattened into the list, and disabled options
+are retained. The convenience factories support
+`ColumnFilter::select()->radio()` and `ColumnFilter::select()->checkboxList()`.
+
 Column popups now render actual Filament fields. Attach a Filter or SelectFilter directly:
 
 ```php

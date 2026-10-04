@@ -11,6 +11,20 @@ use Illuminate\Database\Eloquent\Builder;
 
 class SelectColumnFilter extends ColumnFilter
 {
+    public function radio(): static
+    {
+        $this->multiple(false);
+
+        return parent::radio();
+    }
+
+    public function checkboxList(): static
+    {
+        $this->multiple();
+
+        return parent::checkboxList();
+    }
+
     /**
      * @var array<int | string, string | array<string, string>> | Closure | null
      */

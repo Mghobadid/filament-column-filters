@@ -21,6 +21,34 @@ function composedPopup($component, string $column): ColumnFilterPopup
     return $component->getSchemaComponent('tableFiltersForm.fcf_' . sha1($column));
 }
 
+it('renders native radio and checkbox lists and applies their native SelectFilter state', function () {
+    Donor::create(['name' => 'Alice', 'status' => 'open']);
+    Donor::create(['name' => 'Bob', 'status' => 'closed']);
+    $component = livewire(\Zvizvi\FilamentColumnFilters\Tests\Fixtures\ListDonorsTable::class)->instance();
+    $radio = composedPopup($component, 'status')->getChildSchema()->getComponents()[0];
+    $checkbox = composedPopup($component, 'name')->getChildSchema()->getComponents()[0];
+    expect($radio)->toBeInstanceOf(\Filament\Forms\Components\Radio::class)
+        ->and($radio->getState())->toBe('open')
+        ->and($radio->getOptions())->toBe(['open' => 'Open', 'closed' => 'Closed'])
+        ->and($checkbox)->toBeInstanceOf(\Filament\Forms\Components\CheckboxList::class)
+        ->and($checkbox->getState())->toBe(['Alice']);
+    $radio->state('closed');
+    $checkbox->state(['Bob']);
+    composedPopup($component, 'status')->apply();
+    composedPopup($component, 'name')->apply();
+    expect($component->tableFilters['status'])->toBe(['value' => 'closed'])
+        ->and($component->tableFilters['name'])->toBe(['values' => ['Bob']])
+        ->and($component->getFilteredTableQuery()->pluck('name')->all())->toBe(['Bob']);
+    $normal = $component->getSchema('tableFiltersForm')
+        ->getComponent('tableFiltersForm.status', isAbsoluteKey: true)->getChildSchema()->getComponents()[0];
+    expect($normal->getState())->toBe('closed');
+    $normal->state('open');
+    expect($radio->getState())->toBe('open');
+    composedPopup($component, 'status')->resetFilter();
+    composedPopup($component, 'name')->resetFilter();
+    expect($component->getFilteredTableQuery()->count())->toBe(2);
+});
+
 it('keeps masked range values out of live filter state and query bindings', function () {
     $inside = Donor::create(['name' => 'Inside', 'amount' => 4000000]);
     $outside = Donor::create(['name' => 'Outside', 'amount' => 1000000]);

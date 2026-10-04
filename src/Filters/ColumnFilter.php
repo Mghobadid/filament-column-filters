@@ -13,6 +13,59 @@ use Illuminate\Support\Str;
 
 abstract class ColumnFilter
 {
+    protected ?string $presentation = null;
+
+    public function radio(): static
+    {
+        $this->presentation = 'radio';
+
+        return $this;
+    }
+
+    public function checkboxList(): static
+    {
+        $this->presentation = 'checkbox';
+
+        return $this;
+    }
+
+    public function getPopupSchemaComponents(BaseFilter $filter): array
+    {
+        if ($this->presentation === null) {
+            return array_map(fn ($field) => $field instanceof \Filament\Schemas\Components\Component ? $field->getClone() : $field, $filter->getSchemaComponents());
+        }
+
+        if (! $filter instanceof \Filament\Tables\Filters\SelectFilter
+            || $filter->isMultiple() !== ($this->presentation === 'checkbox')) {
+            throw new \InvalidArgumentException('Radio popups require a single SelectFilter; checkbox popups require a multiple SelectFilter.');
+        }
+
+        if ($filter->queriesRelationships()) {
+            throw new \InvalidArgumentException('List popups support fixed options. Use a dropdown for relationship search.');
+        }
+
+        $source = $filter->getFormField();
+        $field = $this->presentation === 'checkbox'
+            ? \Filament\Forms\Components\CheckboxList::make($source->getName())
+            : \Filament\Forms\Components\Radio::make($source->getName());
+
+        return [$field->label($filter->getLabel())->default($filter->getDefaultState())
+            ->options(function (\Filament\Forms\Components\Field $component) use ($source): array {
+                $source->container($component->getContainer());
+                $options = [];
+                foreach (SelectColumnFilter::flattenOptions($source->getOptions()) as $option) {
+                    $options[$option['value']] = $option['label'];
+                }
+
+                return $options;
+            })
+            ->disableOptionWhen(function ($value, $label, \Filament\Forms\Components\Field $component) use ($source): bool {
+                $source->container($component->getContainer());
+
+                return $source->isOptionDisabled($value, $label);
+            })];
+    }
+
     protected ?string $filterName = null;
 
     protected ?string $syncWithFilter = null;
