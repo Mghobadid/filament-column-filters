@@ -21,6 +21,36 @@ function composedPopup($component, string $column): ColumnFilterPopup
     return $component->getSchemaComponent('tableFiltersForm.fcf_' . sha1($column));
 }
 
+it('renders complete money mask expressions in the input attributes', function () {
+    $html = livewire(ComposedDonorsTable::class)->html();
+    $document = new DOMDocument;
+    @$document->loadHTML($html);
+    $expressions = [];
+    foreach ($document->getElementsByTagName('input') as $input) {
+        if ($input->hasAttribute('x-mask:dynamic')) {
+            $expressions[] = $input->getAttribute('x-mask:dynamic');
+        }
+    }
+    $mask = <<<'JS'
+        $money($input, '.', ',', 0)
+        JS;
+    expect($expressions)->toBe([$mask, $mask]);
+});
+
+it('applies deferred popup state through the exposed Livewire dispatcher', function () {
+    $inside = Donor::create(['name' => 'Inside', 'amount' => 1500]);
+    $outside = Donor::create(['name' => 'Outside', 'amount' => 500]);
+    livewire(ComposedDonorsTable::class)
+        ->set('tableDeferredFilters.cf_amount', ['from' => '1,000', 'until' => '2,000'])
+        ->assertCanSeeTableRecords([$inside, $outside])
+        ->call('callSchemaComponentMethod', 'tableFiltersForm.fcf_' . sha1('amount'), 'apply')
+        ->assertSet('tableFilters.cf_amount.from', 1000)
+        ->assertCanSeeTableRecords([$inside])
+        ->assertCanNotSeeTableRecords([$outside])
+        ->call('callSchemaComponentMethod', 'tableFiltersForm.fcf_' . sha1('amount'), 'resetFilter')
+        ->assertCanSeeTableRecords([$inside, $outside]);
+});
+
 it('validates and applies grouped range inputs as plain numbers', function () {
     Donor::create(['name' => 'Below', 'amount' => 999]);
     Donor::create(['name' => 'Inside', 'amount' => 1500]);

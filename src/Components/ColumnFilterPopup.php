@@ -4,6 +4,7 @@ namespace Zvizvi\FilamentColumnFilters\Components;
 
 use Filament\Schemas\Components\Group;
 use Filament\Support\Components\Attributes\ExposedLivewireMethod;
+use Filament\Support\Livewire\Partials\PartialsComponentHook;
 use Filament\Tables\Filters\BaseFilter;
 
 class ColumnFilterPopup extends Group
@@ -52,6 +53,9 @@ class ColumnFilterPopup extends Group
         if ($livewire->getTable()->hasDeferredFilters()) {
             $livewire->tableDeferredFilters = $drafts;
         }
+        // The schema dispatcher schedules only the deferred filters form.
+        // Applying or resetting a filter must also update rows and indicators.
+        app(PartialsComponentHook::class)->forceRender($livewire);
     }
 
     #[ExposedLivewireMethod]

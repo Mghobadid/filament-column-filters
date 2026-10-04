@@ -42,12 +42,16 @@ class RangeColumnFilter extends ColumnFilter
                 TextInput::make('from')
                     ->label(__('filament-column-filters::filters.range_from'))
                     ->numeric()->step($this->step ?? 'any')
-                    ->mask(RawJs::make('$money($input, ".", ",", 0)'))
+                    ->mask(RawJs::make(<<<'JS'
+                        $money($input, '.', ',', 0)
+                        JS))
                     ->stripCharacters(','),
                 TextInput::make('until')
                     ->label(__('filament-column-filters::filters.range_until'))
                     ->numeric()->step($this->step ?? 'any')
-                    ->mask(RawJs::make('$money($input, ".", ",", 0)'))
+                    ->mask(RawJs::make(<<<'JS'
+                        $money($input, '.', ',', 0)
+                        JS))
                     ->stripCharacters(','),
             ])
             ->query(function (Builder $query, array $data) use ($attribute, $applyUsing): Builder {
