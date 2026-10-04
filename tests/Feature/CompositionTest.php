@@ -61,6 +61,10 @@ it('renders complete money mask expressions in the input attributes', function (
     foreach ($document->getElementsByTagName('input') as $input) {
         if ($input->hasAttribute('x-mask:dynamic')) {
             $expressions[] = $input->getAttribute('x-mask:dynamic');
+            expect($input->getAttribute('x-model'))->toBe('display');
+            foreach ($input->attributes as $attribute) {
+                expect($attribute->name)->not->toStartWith('wire:model');
+            }
         }
     }
     $mask = <<<'JS'

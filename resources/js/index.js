@@ -93,11 +93,33 @@ export function presetRange(preset, weekStartsOn = 0, jalali = false) {
 
 let openInstance = null
 
+export function rangeInput(path, live) {
+    const plain = value => String(value ?? '').replaceAll(',', '')
+    return {
+        display: '',
+        init() {
+            this.display = String(this.$wire.get(path) ?? '')
+            this.$watch('display', value => {
+                const number = plain(value)
+                if (number !== plain(this.$wire.get(path))) {
+                    this.$wire.set(path, number === '' ? null : number, live)
+                }
+            })
+            this.$watch('$wire.' + path, value => {
+                if (plain(value) !== plain(this.display)) {
+                    this.display = String(value ?? '')
+                }
+            })
+        },
+    }
+}
+
 export default function filamentColumnFilters(config) {
     return {
         open: false,
         panelStyle: {},
         reposition: null,
+        rangeInput,
         init() {},
         toggle() { this.open ? this.close() : this.openPanel() },
         openPanel() {

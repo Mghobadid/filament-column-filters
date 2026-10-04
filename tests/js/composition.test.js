@@ -1,6 +1,36 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import popup from '../../resources/js/index.js'
+import { rangeInput } from '../../resources/js/index.js'
+
+for (const live of [true, false]) {
+    test(`range display mask does not echo server updates (${live ? 'live' : 'deferred'})`, () => {
+        const watchers = new Map()
+        const calls = []
+        let state = '3000000'
+        const input = rangeInput('tableFilters.cf_price.from', live)
+        input.$watch = (key, callback) => watchers.set(key, callback)
+        input.$wire = {
+            get: () => state,
+            set: (path, value, immediate) => { state = value; calls.push([path, value, immediate]) },
+        }
+        input.init()
+        // Mask formatting and a server response must not create requests.
+        watchers.get('display')('3,000,000')
+        assert.equal(calls.length, 0)
+        input.display = '5,000,000'
+        watchers.get('display')(input.display)
+        assert.deepEqual(calls, [['tableFilters.cf_price.from', '5000000', live]])
+        watchers.get('$wire.tableFilters.cf_price.from')('5000000')
+        watchers.get('display')('5,000,000')
+        assert.equal(calls.length, 1)
+        state = null
+        watchers.get('$wire.tableFilters.cf_price.from')(null)
+        watchers.get('display')(input.display)
+        assert.equal(input.display, '')
+        assert.equal(calls.length, 1)
+    })
+}
 
 test('popup follows document and nested scrolling, resizes, and removes listeners on destruction', () => {
     const originalWindow = globalThis.window

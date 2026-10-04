@@ -2,7 +2,7 @@
 
 namespace Zvizvi\FilamentColumnFilters\Filters;
 
-use Filament\Forms\Components\TextInput;
+use Zvizvi\FilamentColumnFilters\Components\RangeInput;
 use Filament\Support\RawJs;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Filters\BaseFilter;
@@ -39,14 +39,14 @@ class RangeColumnFilter extends ColumnFilter
         return Filter::make($this->getTargetFilterName($column))
             ->label($label)
             ->schema([
-                TextInput::make('from')
+                RangeInput::make('from')
                     ->label(__('filament-column-filters::filters.range_from'))
                     ->numeric()->step($this->step ?? 'any')
                     ->mask(RawJs::make(<<<'JS'
                         $money($input, '.', ',', 0)
                         JS))
                     ->stripCharacters(','),
-                TextInput::make('until')
+                RangeInput::make('until')
                     ->label(__('filament-column-filters::filters.range_until'))
                     ->numeric()->step($this->step ?? 'any')
                     ->mask(RawJs::make(<<<'JS'
