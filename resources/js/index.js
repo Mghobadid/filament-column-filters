@@ -97,23 +97,36 @@ export default function filamentColumnFilters(config) {
     return {
         open: false,
         panelStyle: {},
+        reposition: null,
         init() {},
         toggle() { this.open ? this.close() : this.openPanel() },
         openPanel() {
             if (openInstance && openInstance !== this) openInstance.close()
             openInstance = this
             this.open = true
+            this.reposition = () => { if (this.open) this.position() }
+            window.addEventListener('scroll', this.reposition, { capture: true, passive: true })
+            window.addEventListener('resize', this.reposition)
             this.$nextTick(() => this.position())
         },
         close() {
             if (openInstance === this) openInstance = null
             this.open = false
+            if (this.reposition) {
+                window.removeEventListener('scroll', this.reposition, true)
+                window.removeEventListener('resize', this.reposition)
+                this.reposition = null
+            }
         },
-        destroy() { if (openInstance === this) openInstance = null },
+        destroy() { this.close() },
         position() {
             const trigger = document.getElementById(config.triggerId)
-            if (!trigger) return
+            if (!trigger) { this.close(); return }
             const rect = trigger.getBoundingClientRect()
+            if (rect.bottom <= 0 || rect.top >= window.innerHeight || rect.right <= 0 || rect.left >= window.innerWidth) {
+                this.close()
+                return
+            }
             const panel = this.$refs.panel
             const width = panel?.offsetWidth || 320
             const height = panel?.offsetHeight || 200
