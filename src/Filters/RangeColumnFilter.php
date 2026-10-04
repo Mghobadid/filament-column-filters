@@ -55,6 +55,7 @@ class RangeColumnFilter extends ColumnFilter
                     ->stripCharacters(','),
             ])
             ->query(function (Builder $query, array $data) use ($attribute, $applyUsing): Builder {
+                $data = $this->normalizeState($data);
                 if ($applyUsing !== null) {
                     return $applyUsing($query, $data) ?? $query;
                 }
@@ -104,6 +105,18 @@ class RangeColumnFilter extends ColumnFilter
     public function getDefaultState(): array
     {
         return ['from' => null, 'until' => null];
+    }
+
+    public function normalizeState(array $state): array
+    {
+        foreach (['from', 'until'] as $field) {
+            $key = $this->getStateKey($field);
+            if (isset($state[$key]) && is_string($state[$key])) {
+                $state[$key] = str_replace(',', '', $state[$key]);
+            }
+        }
+
+        return $state;
     }
 
     public function getPopupConfig(Column $column, Table $table, ?BaseFilter $targetFilter): array

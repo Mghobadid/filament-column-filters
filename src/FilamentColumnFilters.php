@@ -149,6 +149,16 @@ class FilamentColumnFilters
                 }
             }
 
+            if ($targetFilter !== null && $config instanceof \Zvizvi\FilamentColumnFilters\Filters\RangeColumnFilter) {
+                // Masked input is raw Livewire state, which Filament also uses
+                // for URL serialization and live queries before dehydration.
+                foreach (['tableFilters', 'tableDeferredFilters'] as $property) {
+                    if (isset($component->{$property}[$filterName]) && is_array($component->{$property}[$filterName])) {
+                        $component->{$property}[$filterName] = $config->normalizeState($component->{$property}[$filterName]);
+                    }
+                }
+            }
+
             if ($targetFilter !== null && ! $column->isHidden()) {
                 $schema = $component->getSchema('tableFiltersForm');
                 $key = 'fcf_' . sha1($column->getName());

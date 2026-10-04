@@ -21,6 +21,38 @@ function composedPopup($component, string $column): ColumnFilterPopup
     return $component->getSchemaComponent('tableFiltersForm.fcf_' . sha1($column));
 }
 
+it('keeps masked range values out of live filter state and query bindings', function () {
+    $inside = Donor::create(['name' => 'Inside', 'amount' => 4000000]);
+    $outside = Donor::create(['name' => 'Outside', 'amount' => 1000000]);
+    $test = livewire(\Zvizvi\FilamentColumnFilters\Tests\Fixtures\LiveDonorsTable::class)
+        ->set('tableFilters.cf_amount', ['from' => '3,000,000', 'until' => '5,000,000'])
+        ->assertSet('tableFilters.cf_amount.from', '3000000')
+        ->assertSet('tableFilters.cf_amount.until', '5000000')
+        ->assertCanSeeTableRecords([$inside])
+        ->assertCanNotSeeTableRecords([$outside]);
+    expect($test->instance()->getFilteredTableQuery()->getBindings())
+        ->not->toContain('3,000,000', '5,000,000');
+});
+
+it('normalizes restored applied range state and keeps deferred drafts unapplied', function () {
+    $component = livewire(DonorsTable::class)->instance();
+    $component->tableFilters['cf_amount'] = ['from' => '3,000,000', 'until' => '5,000,000'];
+    $component->tableDeferredFilters['cf_amount'] = ['from' => '6,000,000', 'until' => null];
+    FilamentColumnFilters::processComponent($component);
+    expect($component->tableFilters['cf_amount'])->toBe(['from' => '3000000', 'until' => '5000000'])
+        ->and($component->tableDeferredFilters['cf_amount'])->toBe(['from' => '6000000', 'until' => null]);
+});
+
+it('loads grouped range bounds from a bookmarked filters URL', function () {
+    $inside = Donor::create(['name' => 'Inside', 'amount' => 4000000]);
+    $outside = Donor::create(['name' => 'Outside', 'amount' => 1000000]);
+    \Livewire\Livewire::withQueryParams(['filters' => ['cf_amount' => ['from' => '3,000,000', 'until' => '5,000,000']]])
+        ->test(\Zvizvi\FilamentColumnFilters\Tests\Fixtures\LiveDonorsTable::class)
+        ->assertSet('tableFilters.cf_amount.from', '3000000')
+        ->assertCanSeeTableRecords([$inside])
+        ->assertCanNotSeeTableRecords([$outside]);
+});
+
 it('renders complete money mask expressions in the input attributes', function () {
     $html = livewire(ComposedDonorsTable::class)->html();
     $document = new DOMDocument;
