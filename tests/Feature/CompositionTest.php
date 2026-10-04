@@ -26,10 +26,10 @@ it('validates and applies grouped range inputs as plain numbers', function () {
     Donor::create(['name' => 'Inside', 'amount' => 1500]);
     Donor::create(['name' => 'Above', 'amount' => 2001]);
     $component = livewire(ComposedDonorsTable::class)->instance();
-    $component->tableDeferredFilters['cf_amount'] = ['from' => '1,000.125', 'until' => '2,000.50'];
+    $component->tableDeferredFilters['cf_amount'] = ['from' => '1,000', 'until' => '2,000'];
     composedPopup($component, 'amount')->apply();
 
-    expect($component->tableFilters['cf_amount'])->toBe(['from' => 1000.125, 'until' => 2000.5])
+    expect($component->tableFilters['cf_amount'])->toBe(['from' => 1000.0, 'until' => 2000.0])
         ->and($component->getFilteredTableQuery()->pluck('name')->all())->toBe(['Inside']);
     composedPopup($component, 'amount')->resetFilter();
     expect($component->getFilteredTableQuery()->count())->toBe(3);
